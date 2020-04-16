@@ -1,4 +1,5 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.cookiejar import CookieJar
 from urllib import request, parse
 import json
 import logging
@@ -19,8 +20,10 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
     def get_currency_rate(self, search_currency, search_URL=rates_URL):
         req = request.Request(search_URL)
         error_msg = None
+        cj = CookieJar()
         try:
-            resp = request.urlopen(req)
+            opener = request.build_opener(request.HTTPCookieProcessor(cj))
+            resp = opener.open(req)
             logging.info(f'Connecting to a url {search_URL}\n')
         except Exception as e:
             logging.error(e)
