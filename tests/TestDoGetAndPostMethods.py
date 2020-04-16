@@ -1,6 +1,6 @@
 import json
 import unittest
-from urllib import request, parse
+from urllib import request
 
 
 class TestDoGetMethod(unittest.TestCase):
