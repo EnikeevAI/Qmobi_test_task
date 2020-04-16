@@ -44,6 +44,8 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
         error_msg = None
         if self.command == 'GET':
             params = str(request_data).lstrip('/?').replace('&', '=').split('=')
+                if 'favicon.ico' in query_params: 
+                    return None
             try:
                 query_params = {
                     params[i]: params[i + 1] for i in range(0, len(params), 2)}
@@ -72,8 +74,8 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
                     quantity = abs(int(quantity))
                 except Exception as e:
                     logging.error('get_response. ' + str(e))
-                    error_msg = f'ERROR 400: Invalid value for '\
-                                'the number of {currency} to transfer.'
+                    error_msg = 'ERROR 400: Invalid value for '\
+                                f'the number of "{currency}" to transfer.'
                     return False, error_msg.encode('utf-8')
                 result_value = currency_rate[1]*quantity
                 response = {
