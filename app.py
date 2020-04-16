@@ -6,7 +6,7 @@ import re
 import sys
 
 
-rates_URL = 'http://www.cbr.ru/currency_base/daily/1'
+rates_URL = 'http://www.cbr.ru/currency_base/daily/'
 
 
 class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
@@ -17,18 +17,23 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
 
     def get_currency_rate(self, search_currency, search_URL=rates_URL):
         req = request.Request(search_URL)
-        resp = request.urlopen(req)
-        respData = resp.read()
-        search_pattern = search_currency + r'.*?(\d{2}[,]\d*)'
-        paragraphs = re.findall(search_pattern, str(respData))
-        for line in paragraphs:
-            if line:
-                currency_rate = float(line.replace(',', '.'))
-                return True, currency_rate
-        error_msg = f'ERROR: {search_currency} rate not found.'
+        error_msg = None
+        try:
+            resp = request.urlopen(req)
+            logging.info(f'Connecting to a url {search_URL}\n')
+        except Exception as e:
+            logging.error(e)
+            error_msg = e
+        if error_msg is None:
+            respData = resp.read()
+            search_pattern = search_currency + r'.*?(\d{2}[,]\d*)'
+            paragraphs = re.findall(search_pattern, str(respData))
+            for line in paragraphs:
+                if line:
+                    currency_rate = float(line.replace(',', '.'))
+                    return True, currency_rate
+            error_msg = f'ERROR 400: {search_currency} rate not found.'
         return False, error_msg
-        #error_msg = sys.exc_info()[1]
-        #return False, error_msg
 
     def get_query_params(self, path):
         query_params = str(path).lstrip('/?').split('=')
@@ -44,24 +49,24 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
         query_params = self.get_query_params(self.path)
         if query_params:
             currency_name = query_params[0]
-            try:
-                currency_rate = self.get_currency_rate(currency_name.upper())
-            except Exception as e:
-                logging.error(e)
-            try:
-                requested_value = int(query_params[1])
-            except Exception :
-                logging.error('')
-                pass
+            currency_rate = self.get_currency_rate(currency_name.upper())   
             if currency_rate[0]:
+                try:
+                    requested_value = abs(int(query_params[1]))
+                except Exception as e:
+                    logging.error(e + '\n')
+                    error_msg = f"ERROR 400: {e}."
+                    return self.wfile.write(str(error_msg).encode('utf-8'))
                 result_value = currency_rate[1]*requested_value
                 response = {
                     currency_name: {
                         'current_rate': currency_rate[1],
                         'requested_value': requested_value,
                         'result_value': result_value}}
+                logging.info(f'Response value is {response}\n')
                 self.wfile.write(json.dumps(response).encode('utf-8'))
             else:
+                logging.error(str(currency_rate[1]) + '\n')
                 self.wfile.write(str(currency_rate[1]).encode('utf-8'))
 
 def run(server_class=HTTPServer, handler_class=CurrencyConverterHTTPServer, port=8082):
