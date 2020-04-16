@@ -16,7 +16,6 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
-
     def get_currency_rate(self, search_currency, search_URL=rates_URL):
         req = request.Request(search_URL)
         error_msg = None
@@ -39,13 +38,12 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
             error_msg = f'ERROR 400: "{search_currency}" costs not found.'
         return False, error_msg
 
-
     def get_query_params(self, request_data):
         error_msg = None
         if self.command == 'GET':
+            if 'favicon.ico' in request_data:
+                return None, None 
             params = str(request_data).lstrip('/?').replace('&', '=').split('=')
-                if 'favicon.ico' in query_params: 
-                    return None
             try:
                 query_params = {
                     params[i]: params[i + 1] for i in range(0, len(params), 2)}
@@ -60,10 +58,8 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
                 error_msg = f'ERROR 400: Invalid request parameters.'
         if error_msg:
             return False, error_msg
-        elif 'favicon.ico' not in query_params:
-            return True, query_params
         else:
-            return None
+            return True, query_params
 
     def get_response(self, query_params):
         response_result = list()
@@ -90,7 +86,6 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
                 return False, str(currency_rate[1]).encode('utf-8')
         return True, response_result
 
-
     def do_GET(self):
         logging.info(f'GET request, \nPath: {str(self.path)}\nHeaders:\n{str(self.headers)}\n')
         self.set_response()
@@ -104,8 +99,7 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
                 self.wfile.write(response[1])    
         elif query_params[0] == False:
             self.wfile.write(str(query_params[1]).encode('utf-8'))
-
-    
+   
     def do_POST(self):
         content_length = int(self.headers['Content-Length']) 
         post_data = self.rfile.read(content_length) 
@@ -123,7 +117,6 @@ class CurrencyConverterHTTPServer(BaseHTTPRequestHandler):
         elif query_params[0] == False:
             self.wfile.write(str(query_params[1]).encode('utf-8')) 
 
-
 def run(server_class=HTTPServer, handler_class=CurrencyConverterHTTPServer, port=8082):
     logging.basicConfig(level=logging.INFO)
     server_address = ('', port)
@@ -135,7 +128,6 @@ def run(server_class=HTTPServer, handler_class=CurrencyConverterHTTPServer, port
         pass
     httpd.server_close()
     logging.info('Stopping httpd...\n')
-
 
 if __name__ == '__main__':
     run()
